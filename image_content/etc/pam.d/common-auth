@@ -1,0 +1,3 @@
+auth	required	pam_env.so
+auth    sufficient  libERICpamopenam_CXP9039073.so url=http://sso:8080/singlesignon/pam
+auth	sufficient	pam_unix.so	try_first_pass

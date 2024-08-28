@@ -1,0 +1,5 @@
+session	required	pam_limits.so
+session sufficient  libERICpamopenam_CXP9039073.so
+session	sufficient	pam_unix.so	try_first_pass 
+session	optional	pam_umask.so	
+session	optional	pam_env.so

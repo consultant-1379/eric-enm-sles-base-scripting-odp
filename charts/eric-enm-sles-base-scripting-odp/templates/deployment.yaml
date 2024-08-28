@@ -1,0 +1,212 @@
+#
+# COPYRIGHT Ericsson 2021
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eric-enm-sles-base-scripting-odp.fullname" . }}
+  labels:
+  {{- include "eric-enm-sles-base-scripting-odp.labels" . | nindent 4 }}
+  annotations:
+  {{- include "eric-enm-sles-base-scripting-odp.annotations" . | nindent 4 }}
+spec:
+{{- if not .Values.autoScaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "eric-enm-sles-base-scripting-odp.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  strategy:
+    type: {{ .Values.updateStrategy.type | quote }}
+    {{- if and (eq .Values.updateStrategy.type "RollingUpdate") .Values.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.updateStrategy.rollingUpdate.maxSurge }}
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "eric-enm-sles-base-scripting-odp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ include "eric-enm-sles-base-scripting-odp.version" . }}
+{{- include "eric-enm-sles-base-scripting-odp.directStreamingLabel" . | indent 8 }}
+      annotations:
+{{- include "eric-enm-sles-base-scripting-odp.prometheus" . | nindent 8 }}
+{{- include "eric-enm-sles-base-scripting-odp.product-info" . | indent 8 }}
+{{- include "eric-enm-sles-base-scripting-odp.config-annotations" . | indent 8 }}
+{{- include "eric-enm-sles-base-scripting-odp.container-annotations" . | indent 8 }}
+    spec:
+      {{- if include "eric-enm-sles-base-scripting-odp.pullSecret" . }}
+      imagePullSecrets:
+        - name: {{ include "eric-enm-sles-base-scripting-odp.pullSecret" . | quote}}
+      {{- end }}
+      serviceAccountName: {{ template "eric-enm-sles-base-scripting-odp.fullname" . }}
+      securityContext:
+        fsGroup: {{ include "eric-enm-sles-base-scripting-odp.fsGroup.coordinated" . }}
+        {{- include "eric-enm-sles-base-scripting-odp.seccomp-profile" . | indent 8 }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            defaultMode: 493
+            name: {{ include "eric-enm-sles-base-scripting-odp.name" . }}-configmap
+      containers:
+        - name: eric-enm-sles-base-scripting-odp
+          image: {{ template "eric-enm-sles-base-scripting-odp.mainImagePath" . }}
+          imagePullPolicy: {{ template "eric-enm-sles-base-scripting-odp.registryImagePullPolicy" . }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - all
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp-volume
+            - name: config-volume
+              mountPath: /config
+          ports:
+            - name: ssh
+              containerPort: 2022
+              protocol: TCP
+          livenessProbe:
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "initialDelaySeconds") }}
+            {{ print "initialDelaySeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "initialDelaySeconds") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "failureThreshold") }}
+            {{ print "failureThreshold: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "failureThreshold") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "periodSeconds") }}
+            {{ print "periodSeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "periodSeconds") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "timeoutSeconds") }}
+            {{ print "timeoutSeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "livenessProbe" "timeoutSeconds") }}
+          {{- end }}
+            httpGet:
+              path: /actuator/health
+              port: http
+          readinessProbe:
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "initialDelaySeconds") }}
+            {{ print "initialDelaySeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "initialDelaySeconds") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "failureThreshold") }}
+            {{ print "failureThreshold: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "failureThreshold") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "periodSeconds") }}
+            {{ print "periodSeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "periodSeconds") }}
+          {{- end }}
+          {{- if (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "timeoutSeconds") }}
+            {{ print "timeoutSeconds: " (index .Values "probes" "eric-enm-sles-base-scripting-odp" "readinessProbe" "timeoutSeconds") }}
+          {{- end }}
+            httpGet:
+              path: /actuator/health
+              port: http
+          env:
+          - name: SERVICE_ID
+            value: {{ include "eric-enm-sles-base-scripting-odp.name" . | quote}}
+          - name: JAVA_OPTS
+            value: {{ include "eric-enm-sles-base-scripting-odp.jvmHeapSettings" . }}
+          - name: TZ
+            value: {{ template "eric-enm-sles-base-scripting-odp.timezone" . }}
+      {{- if .Values.global }}
+        {{- if .Values.global.security }}
+          {{- if .Values.global.security.tls }}
+            {{- if .Values.global.security.tls.enabled }}
+          - name: CONNECT_MODE
+            value: "tls"
+            {{- if (eq .Values.service.endpoints.chassisapi.tls.enforced "required") }}
+          - name: TLS_MODE
+            value: "only_tls"
+            {{- if (eq .Values.service.endpoints.chassisapi.tls.verifyClientCertificate "required") }}
+          - name: TLS_CA
+            value: "ca_path"
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- include "eric-enm-sles-base-scripting-odp.loggingEnv" . | indent 10 }}
+          resources:
+            requests:
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "cpu") }}
+              cpu: {{ (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "cpu" | quote) }}
+            {{- end }}
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "memory") }}
+              memory: {{ (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "memory" | quote) }}
+            {{- end }}
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "ephemeral-storage") }}
+            {{ println "  ephemeral-storage:" (index .Values "resources" "eric-enm-sles-base-scripting-odp" "requests" "ephemeral-storage" | quote) }}
+            {{- end }}
+            limits:
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "cpu") }}
+              cpu: {{ (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "cpu" | quote) }}
+            {{- end }}
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "memory") }}
+              memory: {{ (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "memory" | quote) }}
+            {{- end }}
+            {{- if (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "ephemeral-storage") }}
+            {{ println "  ephemeral-storage:" (index .Values "resources" "eric-enm-sles-base-scripting-odp" "limits" "ephemeral-storage" | quote) }}
+            {{- end }}
+      nodeSelector: {{ include "eric-enm-sles-base-scripting-odp.nodeSelector" . | nindent 6 -}}
+
+      {{- if .Values.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds:
+        {{- include "eric-enm-sles-base-scripting-odp.terminationGracePeriodSeconds" . | nindent 8 }}
+      {{- end }}
+
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- include "eric-enm-sles-base-scripting-odp.tolerations" . | nindent 8 }}
+      {{- end }}
+
+      {{- if (index .Values "podPriority" "eric-enm-sles-base-scripting-odp" "priorityClassName") }}
+      priorityClassName: {{ (index .Values "podPriority" "eric-enm-sles-base-scripting-odp" "priorityClassName") }}
+      {{- end }}
+
+      {{- with .Values.topologySpreadConstraints.deployment }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- if eq .Values.affinity.podAntiAffinity "hard" }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ include "eric-enm-sles-base-scripting-odp.name" . }}
+            topologyKey: {{ .Values.affinity.topologyKey | quote }}
+      {{- else if eq .Values.affinity.podAntiAffinity  "soft" }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ include "eric-enm-sles-base-scripting-odp.name" . }}
+              topologyKey: {{ .Values.affinity.topologyKey | quote }}
+      {{- end }}

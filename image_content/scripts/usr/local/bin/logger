@@ -1,0 +1,1 @@
+/usr/bin/logger --socket /var/lib/eric-odp/rsyslogd/rsyslog.sock $@

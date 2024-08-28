@@ -1,0 +1,27 @@
+#
+# COPYRIGHT Ericsson 2024
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eric-enm-sles-base-scripting-odp.name" . }}-configmap
+  labels:
+  {{- include "eric-enm-sles-base-scripting-odp.labels" . | nindent 4 }}
+  annotations:
+  {{- include "eric-enm-sles-base-scripting-odp.annotations" . | nindent 4 }}
+data:
+  session-configuration.conf: |
+    session_timeout=0 # timeout in seconds, 0 means no timeout

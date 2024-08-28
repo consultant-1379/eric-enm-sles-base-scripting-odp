@@ -1,0 +1,6 @@
+[repo-oss-python311]
+enabled=1
+autorefresh=1
+baseurl=https://arm.sero.gic.ericsson.se/artifactory/proj-suse-repos-rpm-local/SLE15/SLE-15-SP5-Module-Python3?ssl_verify=no
+priority=70
+gpgcheck=0
